@@ -1,0 +1,268 @@
+User Story:
+As a Product Manager, I want an easy way to add products and view all registered products in the system so that I can manage the inventory in a simple and efficient way.
+
+Acceptance Criteria: 
+
+Given I am on the product management page, when I fill in the product details and click on 'Add Product', then the system should save the product information and display a confirmation message. 
+
+Given I am on the product management page, when I click on 'View Products', then the system should display a list of all registered products with their respective details.
+
+Given the product list is displayed, when I select a particular product, then the system should show me the detailed information of that product including a potential description.
+
+Effort Estimate:
+This feature is classified as medium effort for development. 
+
+Time Estimate:
+We estimate it will take approximately 4 to 6 days for a developer to complete this user story.
+
+API Functionality:
+
+1. POST /api/products
+
+   Functionality: To add a new product to the system.
+
+2. GET /api/products
+
+   Functionality: To retrieve the list of all products from the system.
+
+3. GET /api/products/:id
+
+   Functionality: To retrieve a specific product by its ID from the system.
+
+
+Web Application Structure:
+
+The web application will be structured as follows:
+- Frontend
+  - React or Angular for the User Interface.
+  - Components include product list page and add product form.
+- Backend
+  - Node.js or Python Flask for server-side operations.
+  - Express.js or Django for web application framework.
+- Database
+  - MongoDB or PostgreSQL to store the products information.
+
+Both the frontend and backend will be designed to interact through APIs, enabling the product manager to effectively add and view products in the system. 
+
+Web Application Screens:
+1. Product List Screen
+2. Add Product Form Screen
+3. Product Detail ScreenThe system should be implemented in the main.go file and contain the following parts:
+
+            1. Product Structure (Struct):
+                - Create a Go struct called Product with the following fields:
+                - ID (int)
+                - Name (string)
+                - Price (float64)
+                - Description (string)
+
+            2. Add Product Function (POST):
+                - Create a function called addProduct that:
+                - Handles HTTP POST requests.
+                - Decodes the product data received via JSON.
+                - Stores the product in a list of products.
+                - Responds with the created product in JSON format.
+
+            3. Get Products Function (GET):
+                - Create a function called getProducts that:
+                - Handles HTTP GET requests.
+                - Returns the list of stored products in JSON format.
+
+            4. Web Interface:
+                - The interface should be built using HTML and JavaScript (with fetch).
+                - It should allow users to add products through a form.
+                - The list of added products should be displayed in real-time on the interface.
+                - The interface should interact directly with the APIs (POST and GET) using JavaScript.
+
+            5. Execution:
+                - The APIs should run on port 4000 and the web interface on port 4001.
+                - Use the net/http package to serve both the APIs and the web interface. I want the code like this: package main
+
+import (
+	"encoding/json"
+	"html/template"
+	"log"
+	"net/http"
+)
+
+type Product struct {
+	ID          int     `json:"id"`
+	Name        string  `json:"name"`
+	Price       float64 `json:"price"`
+	Description string  `json:"description"`
+}
+
+var products []Product
+
+func addProduct(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var newProduct Product
+	err := json.NewDecoder(r.Body).Decode(&newProduct)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	products = append(products, newProduct)
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(newProduct)
+}
+
+func getProducts(w http.ResponseWriter, r *http.Request) {
+	json.NewEncoder(w).Encode(products)
+}
+
+func webInterface(w http.ResponseWriter, r *http.Request) {
+	tmpl := template.Must(template.New("index").Parse(`
+		<!DOCTYPE html>
+		<html>
+		<head>
+			<title>Product Manager</title>
+			<style>
+				body {
+					font-family: Arial, sans-serif;
+					background-color: #f4f4f9;
+					margin: 0;
+					padding: 0;
+					display: flex;
+					flex-direction: column;
+					align-items: center;
+				}
+
+				h1 {
+					color: #333;
+					margin-top: 30px;
+				}
+
+				form {
+					background-color: #fff;
+					padding: 20px;
+					border-radius: 8px;
+					box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+					width: 300px;
+				}
+
+				label {
+					font-weight: bold;
+					display: block;
+					margin-bottom: 5px;
+					color: #333;
+				}
+
+				input {
+					width: 100%;
+					padding: 8px;
+					margin-bottom: 10px;
+					border: 1px solid #ccc;
+					border-radius: 4px;
+				}
+
+				button {
+					background-color: #28a745;
+					color: white;
+					padding: 10px 15px;
+					border: none;
+					border-radius: 4px;
+					cursor: pointer;
+					width: 100%;
+				}
+
+				button:hover {
+					background-color: #218838;
+				}
+
+				#productList {
+					margin-top: 20px;
+					list-style-type: none;
+					padding: 0;
+					width: 300px;
+				}
+
+				#productList li {
+					background-color: #fff;
+					margin-bottom: 10px;
+					padding: 10px;
+					border-radius: 8px;
+					box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+					display: flex;
+					justify-content: space-between;
+					align-items: center;
+				}
+			</style>
+			<script>
+				async function addProduct() {
+					let name = document.getElementById('name').value;
+					let price = document.getElementById('price').value;
+					let description = document.getElementById('description').value;
+
+					let product = { id: Date.now(), name, price: parseFloat(price), description };
+					let response = await fetch('/api/addProduct', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json'
+						},
+						body: JSON.stringify(product)
+					});
+
+					if (response.ok) {
+						loadProducts();
+					}
+				}
+
+				async function loadProducts() {
+					let response = await fetch('/api/getProducts');
+					let products = await response.json();
+
+					let list = document.getElementById('productList');
+					list.innerHTML = '';
+					products.forEach(product => {
+						list.innerHTML += '<li>' + product.name + ' - $' + product.price.toFixed(2) + '</li>';
+					});
+				}
+
+				window.onload = loadProducts;
+			</script>
+		</head>
+		<body>
+			<h1>Product Manager</h1>
+			<form onsubmit="event.preventDefault(); addProduct();">
+				<label for="name">Name:</label>
+				<input type="text" id="name" required><br>
+				<label for="price">Price:</label>
+				<input type="number" id="price" required><br>
+				<label for="description">Description:</label>
+				<input type="text" id="description" required><br>
+				<button type="submit">Add Product</button>
+			</form>
+
+			<h2>Product List</h2>
+			<ul id="productList"></ul>
+		</body>
+		</html>
+	`))
+
+	tmpl.Execute(w, nil)
+}
+
+func main() {
+	// API endpoints
+	http.HandleFunc("/api/addProduct", addProduct)
+	http.HandleFunc("/api/getProducts", getProducts)
+
+	// Web interface
+	http.HandleFunc("/", webInterface)
+
+	// Serve API on port 4000 and Web on port 4001
+	go func() {
+		log.Println("Starting API server on port 4000...")
+		log.Fatal(http.ListenAndServe(":4000", nil))
+	}()
+
+	log.Println("Starting web server on port 4001...")
+	log.Fatal(http.ListenAndServe(":4001", nil))
+}

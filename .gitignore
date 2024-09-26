@@ -1,0 +1,4 @@
+/frontend/node_modules
+/backend/.env
+/venv
+/backend/create_project_file.py
